@@ -42,6 +42,7 @@ define(function (require, exports) {
     exports.HANDLE_REMOTE_CREATE = "handle.remote.create";
     exports.HANDLE_FTP_PUSH = "handle.ftp.push";
     exports.HISTORY_SHOW = "history.show";
+    exports.HANDLE_COMMIT_MESSAGE_SELECTION = "commit.message.selection";
 
     // Git results
     exports.GIT_STATUS_RESULTS = "git.status.results";

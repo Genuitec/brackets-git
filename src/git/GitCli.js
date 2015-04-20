@@ -925,6 +925,54 @@ define(function (require, exports) {
         });
     }
 
+    function show(hash) {
+        var args = ["show", "--no-color", "--pretty=format:%H%n%an%n%ae%n%s%n%b%n###~CHANGE-DIFF~###", hash];
+        return git(args).then(function (stdout) {
+            if (!stdout) { return []; }
+
+            var sep  = "-@-BREAK-HERE-@-",
+                sep2 = "$$#-#$BREAK$$-$#";
+            stdout = stdout.replace(sep, sep2)
+                           .replace(/^\t(.*)$/gm, function (a, b) { return b + sep; });
+
+            return stdout.split(sep).reduce(function (arr, lineInfo) {
+                lineInfo = lineInfo.replace(sep2, sep).trimLeft();
+                if (!lineInfo) { return arr; }
+
+                var obj = {},
+                    lines = lineInfo.split("\n");
+
+                obj.hash = lines[0];
+                obj.author = lines[1] + "<" + lines[2] + ">";
+                obj.subject = lines[3];
+
+                var message = "";
+                var contentIndex;
+                for (var i = 4; i < lines.length; i++) {
+                    var nextLine = lines[i];
+                    if (nextLine.indexOf("###~CHANGE-DIFF~###") !== -1) {
+                        contentIndex = i + 1;
+                        break;
+                    }
+                    message += nextLine;
+                    message += "\n";
+                }
+                obj.message = message;
+                lines = lines.slice(Math.max(contentIndex, 1), lines.length);
+                obj.diff = lines.join("\n");
+
+                arr.push(obj);
+                return arr;
+            }, []);
+        }).catch(function (stderr) {
+            var m = stderr.match(/no such path (\S+)/);
+            if (m) {
+                throw new Error("File is not tracked by Git: " + m[1]);
+            }
+            throw stderr;
+        });
+    }
+
     function getGitRoot() {
         var projectRoot = Utils.getProjectRoot();
         return git(["rev-parse", "--show-toplevel"], {
@@ -1042,6 +1090,7 @@ define(function (require, exports) {
     exports.difftoolFromHash          = difftoolFromHash;
     exports.rebase                    = rebase;
     exports.rebaseInit                = rebaseInit;
+    exports.show                      = show;
     exports.mergeRemote               = mergeRemote;
     exports.rebaseRemote              = rebaseRemote;
     exports.resetRemote               = resetRemote;

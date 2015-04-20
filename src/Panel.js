@@ -39,7 +39,8 @@ define(function (require, exports) {
         gitAuthorsDialogTemplate    = require("text!templates/authors-dialog.html"),
         gitCommitDialogTemplate     = require("text!templates/git-commit-dialog.html"),
         gitDiffDialogTemplate       = require("text!templates/git-diff-dialog.html"),
-        questionDialogTemplate      = require("text!templates/git-question-dialog.html");
+        questionDialogTemplate      = require("text!templates/git-question-dialog.html"),
+        gitCommitMessageAt          = require("text!templates/commit-message-dialog.html");
 
     var showFileWhiteList = /^\.gitignore$/;
 
@@ -360,6 +361,19 @@ define(function (require, exports) {
     }
 
     function handleAuthorsSelection() {
+        var selection = _getSelectionOnCurrentFile();
+
+        if (selection) {
+            Git.getBlame(selection.filePath, selection.fromLine, selection.toLine).then(function (blame) {
+                return _showAuthors(selection.filePath, blame, selection.fromLine, selection.toLine);
+            }).catch(function (err) {
+                ErrorHandler.showError(err, "Git Blame failed");
+            });
+        }
+    }
+
+    function _getSelectionOnCurrentFile() {
+        var result = {};
         var editor = EditorManager.getActiveEditor(),
             filePath = _getCurrentFilePath(editor),
             currentSelection = editor.getSelection(),
@@ -380,12 +394,10 @@ define(function (require, exports) {
             ErrorHandler.showError(new ExpectedError(Strings.ERROR_SAVE_FIRST));
             return;
         }
-
-        Git.getBlame(filePath, fromLine, toLine).then(function (blame) {
-            return _showAuthors(filePath, blame, fromLine, toLine);
-        }).catch(function (err) {
-            ErrorHandler.showError(err, "Git Blame failed");
-        });
+        result.filePath = filePath;
+        result.fromLine = fromLine;
+        result.toLine = toLine;
+        return result;
     }
 
     function handleAuthorsFile() {
@@ -987,6 +999,32 @@ define(function (require, exports) {
         setGerritCheckState(enabled);
     });
 
+    EventEmitter.on(Events.HANDLE_COMMIT_MESSAGE_SELECTION, function () {
+        var selection = _getSelectionOnCurrentFile();
+        if (selection) {
+            return Git.getBlame(selection.filePath, selection.fromLine, selection.toLine).then(function (blame) {
+                if (blame.length) {
+                    //use the latest blame hash
+                    return Git.show(blame[0].hash).then(function (message) {
+                        if (message.length) {
+                            var compiledTemplate = Mustache.render(gitCommitMessageAt, {
+                                    file: selection.filePath,
+                                    hash: message[0].hash,
+                                    author: message[0].author,
+                                    subject: message[0].subject,
+                                    message: message[0].message,
+                                    Strings: Strings
+                                });
+                            Dialogs.showModalDialogUsingTemplate(compiledTemplate);
+                        }
+                        });
+                }
+                }).catch(function (err) {
+                    ErrorHandler.showError(err, "Git Blame failed");
+                });
+        }
+    });
+
     function setGerritCheckState(enabled) {
         $gitPanel
             .find(".toggle-gerrit-push-ref")
@@ -1046,6 +1084,7 @@ define(function (require, exports) {
             .on("click", ".git-toggle-untracked", handleToggleUntracked)
             .on("click", ".authors-selection", handleAuthorsSelection)
             .on("click", ".authors-file", handleAuthorsFile)
+            .on("click", ".commit-message-selection", EventEmitter.emitFactory(Events.HANDLE_COMMIT_MESSAGE_SELECTION))
             .on("click", ".git-file-history", EventEmitter.emitFactory(Events.HISTORY_SHOW, "FILE"))
             .on("click", ".git-history-toggle", EventEmitter.emitFactory(Events.HISTORY_SHOW, "GLOBAL"))
             .on("click", ".git-push", function () {

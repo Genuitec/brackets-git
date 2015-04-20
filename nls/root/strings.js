@@ -54,6 +54,7 @@ define({
     COMMIT_ALL_SHORTCUT:                "Commit all files",
     COMMIT_CURRENT_SHORTCUT:            "Commit current file",
     COMMIT_MESSAGE_PLACEHOLDER:         "Enter commit message here\u2026",
+    COMMIT_MESSAGE_AT:                  "Commit Message At",
     CREATE_NEW_BRANCH:                  "Create new branch\u2026",
     CREATE_NEW_GITFTP_SCOPE:            "Create new Git-FTP remote\u2026",
     CREATE_NEW_REMOTE:                  "Create new remote\u2026",
@@ -236,5 +237,6 @@ define({
     USING_GIT_VERSION:                  "Git version",
     VIEW_AUTHORS_FILE:                  "View authors of file",
     VIEW_AUTHORS_SELECTION:             "View authors of selection",
+    VIEW_COMMIT_SELECTION:              "View commit of selection",
     VIEW_THIS_FILE:                     "View this file"
 });
