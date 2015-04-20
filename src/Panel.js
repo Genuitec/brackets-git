@@ -1004,7 +1004,7 @@ define(function (require, exports) {
         if (selection) {
             return Git.getBlame(selection.filePath, selection.fromLine, selection.toLine).then(function (blame) {
                 if (blame.length) {
-                    //use the latest blame hash
+                    // Use the latest blame hash
                     return Git.show(blame[0].hash).then(function (message) {
                         if (message.length) {
                             var compiledTemplate = Mustache.render(gitCommitMessageAt, {
@@ -1014,14 +1014,14 @@ define(function (require, exports) {
                                     subject: message[0].subject,
                                     message: message[0].message,
                                     Strings: Strings
-                                });
+                            });
                             Dialogs.showModalDialogUsingTemplate(compiledTemplate);
                         }
-                        });
+                    });
                 }
-                }).catch(function (err) {
-                    ErrorHandler.showError(err, "Git Blame failed");
-                });
+            }).catch(function (err) {
+                ErrorHandler.showError(err, "Git Blame failed");
+            });
         }
     });
 
